@@ -8,9 +8,6 @@ class Day1 < Base
   end
 
   def find_sums(target, count)
-    input_to_ints.combination(count) do |values|
-      return values if values.inject(:+) == target
-    end
-    nil
+    input_to_ints.combination(count).find { |values| values.sum == target }
   end
 end
