@@ -18,4 +18,12 @@ class Day2Test < Minitest::Test
     assert d2.entries[2].valid?
     assert_equal 2, d2.part1
   end
+
+  def test_part2
+    d2 = Day2.new(TEST_INPUT)
+    assert d2.entries[0].valid2?
+    refute d2.entries[1].valid2?
+    refute d2.entries[2].valid2?
+    assert_equal 1, d2.part2
+  end
 end
