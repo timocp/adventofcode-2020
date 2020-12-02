@@ -1,4 +1,8 @@
 class Base
+  def initialize(input = nil)
+    @raw_input = input
+  end
+
   def load_input
     @raw_input = File.read("input/day#{number}.txt")
   end
