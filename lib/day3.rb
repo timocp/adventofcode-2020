@@ -3,6 +3,18 @@ class Day3 < Base
     count_trees(right: 3, down: 1)
   end
 
+  def part2
+    [
+      [1, 1],
+      [3, 1],
+      [5, 1],
+      [7, 1],
+      [1, 2]
+    ].map do |right, down|
+      count_trees(right: right, down: down)
+    end.inject(:*)
+  end
+
   def grid
     @grid ||= parse_grid
   end
