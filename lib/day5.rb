@@ -1,6 +1,15 @@
 class Day5 < Base
   def part1
-    raw_input.split.map { |data| parse(data) }.map(&:id).max
+    seats.map(&:id).max
+  end
+
+  def part2
+    ids = seats.map(&:id).sort
+    (ids.first..ids.last).to_a - ids
+  end
+
+  def seats
+    @seats ||= raw_input.split.map { |data| parse(data) }
   end
 
   Seat = Struct.new(:row, :column) do
