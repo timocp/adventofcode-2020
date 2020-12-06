@@ -5,7 +5,7 @@ class Day5 < Base
 
   def part2
     ids = seats.map(&:id).sort
-    (ids.first..ids.last).to_a - ids
+    ((ids.first..ids.last).to_a - ids).first
   end
 
   def seats
