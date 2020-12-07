@@ -25,4 +25,24 @@ class Day7Test < Minitest::Test
     refute d7.may_contain?("dotted black", "shiny gold")
     assert_equal 4, Day7.new(TEST_INPUT).part1
   end
+
+  TEST_INPUT2 = <<~END
+    shiny gold bags contain 2 dark red bags.
+    dark red bags contain 2 dark orange bags.
+    dark orange bags contain 2 dark yellow bags.
+    dark yellow bags contain 2 dark green bags.
+    dark green bags contain 2 dark blue bags.
+    dark blue bags contain 2 dark violet bags.
+    dark violet bags contain no other bags.
+  END
+
+  def test_part2
+    d7 = Day7.new(TEST_INPUT)
+    assert_equal 0, d7.count_bags("faded blue")
+    assert_equal 0, d7.count_bags("dotted black")
+    assert_equal 11, d7.count_bags("vibrant plum")
+    assert_equal 7, d7.count_bags("dark olive")
+    assert_equal 32, d7.count_bags("shiny gold")
+    assert_equal 126, Day7.new(TEST_INPUT2).count_bags("shiny gold")
+  end
 end
