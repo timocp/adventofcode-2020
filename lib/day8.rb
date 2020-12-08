@@ -1,32 +1,33 @@
 class Day8 < Base
   def part1
-    seen = {} # key of instructions that have already executed
-    VM.new(raw_input).tap do |vm|
-      vm.run_until do
-        if seen[vm.pc]
-          true
-        else
-          seen[vm.pc] = true
-          false
-        end
-      end
-    end.accumulator
+    vm = VM.new(raw_input)
+    vm.terminates? # we know it doesn't
+    vm.accumulator
+  end
+
+  def part2
+    vm = VM.new(raw_input)
+    vm.program.map(&:op).each.with_index.reject { |op, _i| op == :acc }.each do |orig_op, i|
+      new_op = orig_op == :nop ? :jmp : :nop
+      vm.program[i].op = new_op
+      return vm.accumulator if vm.terminates?
+      vm.program[i].op = orig_op
+    end
+    "Never terminates"
   end
 
   class VM
     def initialize(text)
       @program = parse_program(text)
-      @accumulator = 0
-      @pc = 0
     end
 
-    attr_reader :accumulator, :pc
+    attr_reader :accumulator, :pc, :program
 
     Instruction = Struct.new(:op, :arg)
 
     def run_until(&block)
-      loop do
-        return if yield
+      while instruction
+        return false if yield
 
         case instruction.op
         when :nop then nop
@@ -36,6 +37,25 @@ class Day8 < Base
           raise "Unhandled opcode: #{instruction.op}"
         end
       end
+      true
+    end
+
+    def terminates?
+      reset
+      seen = {}
+      run_until do
+        if seen[pc]
+          true
+        else
+          seen[pc] = true
+          false
+        end
+      end
+    end
+
+    def reset
+      @accumulator = 0
+      @pc = 0
     end
 
     private
@@ -51,7 +71,7 @@ class Day8 < Base
     end
 
     def increment_pc
-      @pc = (@pc + 1 % @program.size)
+      @pc += 1
     end
 
     def nop
