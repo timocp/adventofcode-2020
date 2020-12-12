@@ -15,4 +15,11 @@ class Day12Test < Minitest::Test
     assert_equal 17, d12.ship.x
     assert_equal 8, d12.ship.y
   end
+
+  def test_part2
+    d12 = Day12.new(TEST_INPUT)
+    assert_equal 286, d12.part2
+    assert_equal 214, d12.ship.x
+    assert_equal 72, d12.ship.y
+  end
 end

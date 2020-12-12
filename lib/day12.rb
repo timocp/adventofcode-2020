@@ -5,10 +5,16 @@ class Day12 < Base
     @ship.manhattan
   end
 
+  def part2
+    @ship = Ship.new(0, 0, 0, 10, -1)
+    move_with_waypoint
+    @ship.manhattan
+  end
+
   attr_reader :ship
 
   # facing: 0 = E, 1 = S, 2 = W, 3 = N
-  Ship = Struct.new(:facing, :x, :y) do
+  Ship = Struct.new(:facing, :x, :y, :wayx, :wayy) do
     def manhattan
       x.abs + y.abs
     end
@@ -45,6 +51,35 @@ class Day12 < Base
       when 3 then north(num)
       end
     end
+
+    def waypoint_north(num)
+      self.wayy -= num
+    end
+
+    def waypoint_east(num)
+      self.wayx += num
+    end
+
+    def waypoint_south(num)
+      self.wayy += num
+    end
+
+    def waypoint_west(num)
+      self.wayx -= num
+    end
+
+    def rotate_waypoint_left(degrees)
+      rotate_waypoint_right(360 - degrees)
+    end
+
+    def rotate_waypoint_right(degrees)
+      (degrees / 90).times { self.wayx, self.wayy = self.wayy * -1, self.wayx }
+    end
+
+    def move_to_waypoint(num)
+      self.x += num * wayx
+      self.y += num * wayy
+    end
   end
 
   def move
@@ -57,6 +92,20 @@ class Day12 < Base
       when "L" then ship.left(num)
       when "R" then ship.right(num)
       when "F" then ship.forward(num)
+      end
+    end
+  end
+
+  def move_with_waypoint
+    raw_input.each_line.map { |line| [line[0], line[1..].to_i] }.each do |command, num|
+      case command
+      when "N" then ship.waypoint_north(num)
+      when "S" then ship.waypoint_south(num)
+      when "E" then ship.waypoint_east(num)
+      when "W" then ship.waypoint_west(num)
+      when "L" then ship.rotate_waypoint_left(num)
+      when "R" then ship.rotate_waypoint_right(num)
+      when "F" then ship.move_to_waypoint(num)
       end
     end
   end
