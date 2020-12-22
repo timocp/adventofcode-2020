@@ -11,21 +11,18 @@ class Day15 < Base
     input = raw_input.split(",").map(&:to_i)
 
     most_recent = nil
-    seen = {} # array of last 2 rounds spoken
+    output = nil
+    seen = {} # last round seen
 
     (1..stop).each do |round|
-      output = if (i = input.shift)
-                 i
-               elsif seen[most_recent].size == 1
-                 0
+      output = if input.any?
+                 input.shift
+               elsif seen.key?(most_recent)
+                 round - seen[most_recent]
                else
-                 seen[most_recent][1] - seen[most_recent][0]
+                 0
                end
-      seen[output] = if seen.key?(output)
-                       [seen[output].last, round]
-                     else
-                       [round]
-                     end
+      seen[most_recent] = round
       most_recent = output
     end
     most_recent
