@@ -12,17 +12,17 @@ class Day15 < Base
 
     most_recent = nil
     output = nil
-    seen = {} # last round seen
+    seen = [] # last round seen
 
     (1..stop).each do |round|
       output = if input.any?
                  input.shift
-               elsif seen.key?(most_recent)
+               elsif seen[most_recent]
                  round - seen[most_recent]
                else
                  0
                end
-      seen[most_recent] = round
+      seen[most_recent] = round if most_recent
       most_recent = output
     end
     most_recent
