@@ -7,7 +7,14 @@ class Day17 < Base
     grid.population
   end
 
-  Point = Struct.new(:x, :y, :z)
+  def part2
+    grid = parse
+    grid.hyper!
+    6.times { grid.iterate }
+    grid.population
+  end
+
+  Point = Struct.new(:x, :y, :z, :w)
 
   # a grid is a Set of Points which are active
   class Grid
@@ -15,12 +22,17 @@ class Day17 < Base
       @grid = Set.new
     end
 
-    def set(x, y, z)
-      @grid.add(Point.new(x, y, z))
+    # adds a 4th dimension (w)
+    def hyper!
+      @hyper = true
     end
 
-    def active?(x, y, z)
-      @grid.include?(Point.new(x, y, z))
+    def set(x, y, z, w)
+      @grid.add(Point.new(x, y, z, w))
+    end
+
+    def active?(x, y, z, w)
+      @grid.include?(Point.new(x, y, z, w))
     end
 
     def population
@@ -30,15 +42,17 @@ class Day17 < Base
     # replaces grid with a new one after 1 iteration
     def iterate
       new_grid = Set.new
-      range(:z, true).each do |z|
-        range(:y, true).each do |y|
-          range(:x, true).each do |x|
-            if active?(x, y, z)
-              # next cube is active if there are 2-3 active neighbours
-              new_grid.add(Point.new(x, y, z)) if [2, 3].include?(active_neighbours(x, y, z, stop: 4))
-            else
-              # next cube is active if exactly 3 active neighbours
-              new_grid.add(Point.new(x, y, z)) if active_neighbours(x, y, z, stop: 4) == 3
+      range(:w, true).each do |w|
+        range(:z, true).each do |z|
+          range(:y, true).each do |y|
+            range(:x, true).each do |x|
+              if active?(x, y, z, w)
+                # next cube is active if there are 2-3 active neighbours
+                new_grid.add(Point.new(x, y, z, w)) if [2, 3].include?(active_neighbours(x, y, z, w, stop: 4))
+              else
+                # next cube is active if exactly 3 active neighbours
+                new_grid.add(Point.new(x, y, z, w)) if active_neighbours(x, y, z, w, stop: 4) == 3
+              end
             end
           end
         end
@@ -47,16 +61,19 @@ class Day17 < Base
     end
 
     # count active neighbours next to this cube (up to stop)
-    def active_neighbours(x, y, z, stop: nil)
+    def active_neighbours(x, y, z, w, stop: nil)
       count = 0
-      [-1, 0, 1].each do |dz|
-        [-1, 0, 1].each do |dy|
-          [-1, 0, 1].each do |dx|
-            next if dz.zero? && dy.zero? && dx.zero?
-            next unless active?(x + dx, y + dy, z + dz)
+      wrange = @hyper ? [-1, 0, 1] : [0]
+      wrange.each do |dw|
+        [-1, 0, 1].each do |dz|
+          [-1, 0, 1].each do |dy|
+            [-1, 0, 1].each do |dx|
+              next if dz.zero? && dy.zero? && dx.zero? && dw.zero?
+              next unless active?(x + dx, y + dy, z + dz, w + dw)
 
-            count += 1
-            return count if stop && count == stop
+              count += 1
+              return count if stop && count == stop
+            end
           end
         end
       end
@@ -65,11 +82,14 @@ class Day17 < Base
 
     def to_s
       s = ""
-      range(:z).each do |z|
-        s += "z=#{z}\n"
-        range(:y).each do |y|
-          range(:x).each do |x|
-            s += active?(x, y, z) ? "#" : "."
+      range(:w).each do |w|
+        range(:z).each do |z|
+          s += "z=#{z}, w=#{w}\n"
+          range(:y).each do |y|
+            range(:x).each do |x|
+              s += active?(x, y, z, w) ? "#" : "."
+            end
+            s += "\n"
           end
           s += "\n"
         end
@@ -79,6 +99,8 @@ class Day17 < Base
     end
 
     def range(axis, expand = false)
+      return 0..0 if !@hyper && axis == :w
+
       min, max = @grid.map(&axis).minmax
       if expand
         min -= 1
@@ -92,7 +114,7 @@ class Day17 < Base
     grid = Grid.new
     raw_input.each_line.with_index do |line, y|
       line.each_char.with_index do |c, x|
-        grid.set(x, y, 0) if c == "#"
+        grid.set(x, y, 0, 0) if c == "#"
       end
     end
     grid
