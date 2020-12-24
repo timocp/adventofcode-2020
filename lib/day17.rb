@@ -13,8 +13,6 @@ class Day17 < Base
     grid.population
   end
 
-  Point = Struct.new(:x, :y, :z, :w)
-
   # a grid is a Set of Points which are active
   class Grid
     def initialize(hyper)
@@ -26,7 +24,7 @@ class Day17 < Base
     attr_reader :minx, :maxx, :miny, :maxy, :minz, :maxz, :minw, :maxw
 
     def set(x, y, z, w)
-      @grid.add(Point.new(x, y, z, w))
+      @grid.add([x, y, z, w])
       @minx = x if x < @minx
       @maxx = x if x > @maxx
       @miny = y if y < @miny
@@ -40,7 +38,7 @@ class Day17 < Base
     end
 
     def active?(x, y, z, w)
-      @grid.include?(Point.new(x, y, z, w))
+      @grid.include?([x, y, z, w])
     end
 
     def population
