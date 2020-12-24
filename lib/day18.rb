@@ -3,15 +3,19 @@ class Day18 < Base
     raw_input.each_line.map { |line| evaluate(line.chomp) }.sum
   end
 
+  def part2
+    @advanced = true # means addition is evaluated BEFORE multiplication
+    raw_input.each_line.map { |line| evaluate(line.chomp) }.sum
+  end
+
+  attr_accessor :advanced
+
   def evaluate(expr)
-    self.class.evaluate(expr)
+    parse(scan(expr)) # .tap { |a| warn "#{expr} -> #{a}" if advanced }
   end
 
-  def self.evaluate(expr)
-    parse(scan(expr)) # .tap { |a| warn "#{expr} -> #{a}" }
-  end
-
-  def self.parse(tokens)
+  # parses an array of tokens; returns an integer result
+  def parse(tokens)
     if tokens.size == 1
       tokens.first
     elsif (lgroup = tokens.index("("))
@@ -29,11 +33,19 @@ class Day18 < Base
           end
         end
       end
-      raise ArgumentError, "unmatched paraens at: #{tokens.inspect}" if rgroup.nil?
+      raise ArgumentError, "unmatched parens at: #{tokens.inspect}" if rgroup.nil?
+
       if lgroup.zero?
         parse([parse(tokens[(lgroup + 1)..(rgroup - 1)])] + tokens[(rgroup + 1)..])
       else
         parse(tokens[0..(lgroup - 1)] + [parse(tokens[(lgroup + 1)..(rgroup - 1)])] + tokens[(rgroup + 1)..])
+      end
+    elsif advanced && (plus = tokens.index("+"))
+      # part 2 treats addition as high priority that multiplication
+      if plus == 1
+        parse([tokens[0] + tokens[2]] + tokens[3..])
+      else
+        parse(tokens[0, plus - 1] + [tokens[plus - 1] + tokens[plus + 1]] + tokens[(plus + 2)..])
       end
     elsif tokens[1] == "+"
       parse([tokens[0] + tokens[2]] + tokens[3..])
@@ -45,7 +57,7 @@ class Day18 < Base
   end
 
   # lexical scanner, turn string into array of components
-  def self.scan(expr)
+  def scan(expr)
     s = StringScanner.new(expr)
     tokens = []
     until s.eos?
@@ -55,7 +67,6 @@ class Day18 < Base
       elsif (op = s.scan(/[+*()]/))
         tokens << op
       else
-        binding.pry
         raise ArgumentError, "scanner error at #{s.inspect}"
       end
     end
