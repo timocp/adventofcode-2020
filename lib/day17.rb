@@ -2,15 +2,14 @@ require "set"
 
 class Day17 < Base
   def part1
-    grid = parse
-    6.times { grid.iterate }
+    grid = parse(hyper: false)
+    6.times { grid = grid.next }
     grid.population
   end
 
   def part2
-    grid = parse
-    grid.hyper!
-    6.times { grid.iterate }
+    grid = parse(hyper: true)
+    6.times { grid = grid.next }
     grid.population
   end
 
@@ -18,17 +17,26 @@ class Day17 < Base
 
   # a grid is a Set of Points which are active
   class Grid
-    def initialize
+    def initialize(hyper)
       @grid = Set.new
+      @hyper = hyper
+      @minx = @maxx = @miny = @maxy = @minz = @maxz = @minw = @maxw = 0
     end
 
-    # adds a 4th dimension (w)
-    def hyper!
-      @hyper = true
-    end
+    attr_reader :minx, :maxx, :miny, :maxy, :minz, :maxz, :minw, :maxw
 
     def set(x, y, z, w)
       @grid.add(Point.new(x, y, z, w))
+      @minx = x if x < @minx
+      @maxx = x if x > @maxx
+      @miny = y if y < @miny
+      @maxy = y if y > @maxy
+      @minz = z if z < @minz
+      @maxz = z if z > @maxz
+      return unless @hyper
+
+      @minw = w if w < @minw
+      @maxw = w if w > @maxw
     end
 
     def active?(x, y, z, w)
@@ -39,32 +47,32 @@ class Day17 < Base
       @grid.size
     end
 
-    # replaces grid with a new one after 1 iteration
-    def iterate
-      new_grid = Set.new
-      range(:w, true).each do |w|
-        range(:z, true).each do |z|
-          range(:y, true).each do |y|
-            range(:x, true).each do |x|
-              if active?(x, y, z, w)
-                # next cube is active if there are 2-3 active neighbours
-                new_grid.add(Point.new(x, y, z, w)) if [2, 3].include?(active_neighbours(x, y, z, w, stop: 4))
-              else
-                # next cube is active if exactly 3 active neighbours
-                new_grid.add(Point.new(x, y, z, w)) if active_neighbours(x, y, z, w, stop: 4) == 3
+    # returns a new grid after simulating 1 iteration
+    def next
+      new_grid = Grid.new(@hyper)
+      (@hyper ? (minw - 1).upto(maxw + 1) : [0]).each do |w|
+        (minz - 1).upto(maxz + 1).each do |z|
+          (miny - 1).upto(maxy + 1).each do |y|
+            (minx - 1).upto(maxx + 1).each do |x|
+              neighbours = active_neighbours(x, y, z, w)
+              if active?(x, y, z, w) && [2, 3].include?(neighbours)
+                # active and 2-3 active neighbours
+                new_grid.set(x, y, z, w)
+              elsif !active?(x, y, z, w) && neighbours == 3
+                # inactive and exactly 3 neighbours
+                new_grid.set(x, y, z, w) if active_neighbours(x, y, z, w) == 3
               end
             end
           end
         end
       end
-      @grid = new_grid # replace with next one
+      new_grid
     end
 
-    # count active neighbours next to this cube (up to stop)
-    def active_neighbours(x, y, z, w, stop: nil)
+    # count active neighbours next to this cube (up to 4)
+    def active_neighbours(x, y, z, w)
       count = 0
-      wrange = @hyper ? [-1, 0, 1] : [0]
-      wrange.each do |dw|
+      (@hyper ? [-1, 0, 1] : [0]).each do |dw|
         [-1, 0, 1].each do |dz|
           [-1, 0, 1].each do |dy|
             [-1, 0, 1].each do |dx|
@@ -72,7 +80,7 @@ class Day17 < Base
               next unless active?(x + dx, y + dy, z + dz, w + dw)
 
               count += 1
-              return count if stop && count == stop
+              return count if count == 4 # don't care about counts higher than 4
             end
           end
         end
@@ -82,11 +90,11 @@ class Day17 < Base
 
     def to_s
       s = ""
-      range(:w).each do |w|
-        range(:z).each do |z|
+      minw.upto(maxw).each do |w|
+        minz.upto(maxz).each do |z|
           s += "z=#{z}, w=#{w}\n"
-          range(:y).each do |y|
-            range(:x).each do |x|
+          miny.upto(maxy).each do |y|
+            minx.upto(maxx).each do |x|
               s += active?(x, y, z, w) ? "#" : "."
             end
             s += "\n"
@@ -97,21 +105,10 @@ class Day17 < Base
       end
       "#{s}\n"
     end
-
-    def range(axis, expand = false)
-      return 0..0 if !@hyper && axis == :w
-
-      min, max = @grid.map(&axis).minmax
-      if expand
-        min -= 1
-        max += 1
-      end
-      min..max
-    end
   end
 
-  def parse
-    grid = Grid.new
+  def parse(hyper:)
+    grid = Grid.new(hyper)
     raw_input.each_line.with_index do |line, y|
       line.each_char.with_index do |c, x|
         grid.set(x, y, 0, 0) if c == "#"
