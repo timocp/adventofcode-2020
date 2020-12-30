@@ -16,12 +16,14 @@ class Day23 < Base
     circle[1] * circle[circle[1]]
   end
 
-  # hash version to reduce reallocations
   def play2(count, circle)
-    # build a hash keyed by cup, value is the cup that follows it
+    # build a array indexed by cup, value is the cup that follows it
     max = circle.max
     current = circle.first
-    circle = circle.map.with_index { |cup, i| [cup, circle[i + 1] || circle[0]] }.to_h
+    new_circle = []
+    circle.each_cons(2).each { |from, to| new_circle[from] = to }
+    new_circle[circle.last] = circle.first
+    circle = new_circle
 
     count.times do |move|
       pickup = [circle[current]]

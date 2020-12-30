@@ -5,7 +5,7 @@ class Day23Test < Minitest::Test
 
   def test_part1
     assert_equal(
-      { 1 => 9, 9 => 2, 2 => 6, 6 => 5, 5 => 8, 8 => 3, 3 => 7, 7 => 4, 4 => 1 },
+      [nil, 9, 6, 7, 1, 8, 5, 4, 3, 2],
       Day23.new.play2(10, [3, 8, 9, 1, 2, 5, 4, 6, 7])
     )
     assert_equal "67384529", Day23.new(TEST_INPUT).part1
