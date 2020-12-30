@@ -20,4 +20,8 @@ class Day22Test < Minitest::Test
   def test_part1
     assert_equal 306, Day22.new(TEST_INPUT).part1
   end
+
+  def test_part2
+    assert_equal 291, Day22.new(TEST_INPUT).part2
+  end
 end
