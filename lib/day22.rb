@@ -9,27 +9,18 @@ class Day22 < Base
 
   def part2
     parse
-    dbg
     play_recursive(@deck)
     winning_players_score
   end
 
   def play
-    (1..).each do |round|
-      dbg "-- Round #{round} --"
-      dbg "Player 1's deck: #{@deck[0].join(", ")}"
-      dbg "Player 2's deck: #{@deck[1].join(", ")}"
+    (1..).each do
       cards = @deck.map(&:shift)
-      dbg "Player 1 plays: #{cards[0]}"
-      dbg "Player 2 plays: #{cards[1]}"
       if cards[0] > cards[1]
-        dbg "Player 1 wins the round!"
         @deck[0] += cards
       else
-        dbg "Player 2 wins the round!"
         @deck[1] += cards.reverse
       end
-      dbg
       break if @deck.any?(&:empty?)
     end
   end
@@ -40,56 +31,31 @@ class Day22 < Base
 
   # returns the winning player of this game
   def play_recursive(deck)
-    @game = (@game || 0) + 1
-    seen ||= Set.new
+    seen = Set.new
 
-    game = @game
-    dbg "=== Game #{game} ==="
+    (1..).each do
+      key = (deck[0] + [-1] + deck[1]).join(",")
+      return 0 if seen.include?(key)
 
-    (1..).each do |round|
-      dbg
-      dbg "-- Round #{round} (Game #{game}) --"
-      dbg "Player 1's deck: #{deck[0].join(", ")}"
-      dbg "Player 2's deck: #{deck[1].join(", ")}"
-      key = deck[0] + [-1] + deck[1]
-      if seen.include?(key)
-        dbg "This deck has been seen before in this game!  Giving game #{game} to Player 1"
-        return 0
-      else
-        seen.add(key)
-      end
+      seen.add(key)
       cards = deck.map(&:shift)
-      dbg "Player 1 plays: #{cards[0]}"
-      dbg "Player 2 plays: #{cards[1]}"
       winner = if cards[0] <= deck[0].size && cards[1] <= deck[1].size
-                 dbg "Playing a sub-game to determine the winner..."
-                 dbg
-                 play_recursive([deck[0][0, cards[0]], deck[1][0, cards[1]]]).tap do
-                   dbg "...anyway, back to game 1"
+                 d0 = deck[0].take(cards[0])
+                 d1 = deck[1].take(cards[1])
+                 if d0.max > d1.max
+                   0 # P1 has to win this subgame
+                 else
+                   play_recursive([deck[0].take(cards[0]), deck[1].take(cards[1])])
                  end
                elsif cards[0] > cards[1]
                  0
                else
                  1
                end
-      dbg "Player #{winner + 1} wins round #{round} of game #{game}!"
       deck[winner] += winner.zero? ? cards : cards.reverse
-      break if deck.any?(&:empty?)
+      return 1 if deck[0].empty?
+      return 0 if deck[1].empty?
     end
-
-    if deck[0].empty?
-      dbg "The winner of game #{game} is player 2!"
-      dbg
-      1
-    else
-      dbg "The winner of game #{game} is player 1!"
-      dbg
-      0
-    end
-  end
-
-  def dbg(text = "")
-    # puts text
   end
 
   def parse
