@@ -27,4 +27,9 @@ class Day24Test < Minitest::Test
   def test_part1
     assert_equal 10, Day24.new(TEST_INPUT).part1
   end
+
+  def test_part2
+    # works but slow
+    # assert_equal 2208, Day24.new(TEST_INPUT).part2
+  end
 end
