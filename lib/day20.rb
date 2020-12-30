@@ -1,10 +1,33 @@
 class Day20 < Base
   def part1
-    solve
     corners.inject(&:*)
   end
 
+  def part2
+    [false, true].each do |hflip|
+      [false, true].each do |vflip|
+        [false, true].each do |transpose|
+          img = image.map(&:dup)
+          img = img.reverse if hflip
+          img = img.map(&:reverse) if vflip
+          img = img.transpose if transpose
+          # puts "CHECKING #{hflip} #{vflip} #{transpose}"
+          count = detect_sea_monsters!(img)
+          next if count.zero?
+
+          # puts "FOUND MONSTERS:"
+          # puts img.map(&:join).join("\n")
+          # puts
+          return img.sum { |row| row.count("#") }
+        end
+      end
+    end
+    nil
+  end
+
   def solve
+    return if @solution
+
     # tiles where we know the correct placement
     # The key is location [x, y], and the value is a has of:
     #   tile: Tile object
@@ -12,26 +35,28 @@ class Day20 < Base
     #   edges: array of pre-calculated edge values
     @solution = {}
 
-    # solution is based on tile[0] being placed at (0,0), in its original
-    # unrotated and unflipped configuration.
+    # solution is based on tile[0] being placed at (0,0), in a horizontally
+    # flipped configuration (this is arbitrary, but makes it match the example)
     unknown = tiles
     first = unknown.shift
     @solution[[0, 0]] = {
       tile: first,
-      hflip: false, vflip: false, transpose: false,
+      hflip: true, vflip: false, transpose: false,
       edges: [
-        first.edge(NORTH, false, false, false),
-        first.edge(EAST, false, false, false),
-        first.edge(SOUTH, false, false, false),
-        first.edge(WEST, false, false, false)
+        first.edge(NORTH, true, false, false),
+        first.edge(EAST, true, false, false),
+        first.edge(SOUTH, true, false, false),
+        first.edge(WEST, true, false, false)
       ]
     }
+    # warn "\nAdding tile #{first.number} at (0, 0)"
 
     # now loop trying to find tiles that will fit ANYWHERE on any existing
     # tile
     while unknown.any?
       index, x, y, hflip, vflip, transpose = find_matching_tile(unknown)
       tile = unknown.delete_at(index)
+      # warn "Adding tile #{tile.number} at (#{x}, #{y}) (hflip=#{hflip}, vflip=#{vflip}, transpose=#{transpose})"
       @solution[[x, y]] = {
         tile: tile,
         hflip: hflip, vflip: vflip, transpose: transpose,
@@ -59,6 +84,7 @@ class Day20 < Base
   end
 
   def corners
+    solve
     xx = @solution.keys.map(&:first).minmax
     yy = @solution.keys.map(&:last).minmax
     [
@@ -79,10 +105,10 @@ class Day20 < Base
       [NORTH, EAST, SOUTH, WEST].each do |direction|
         # skip if already something here
         dx, dy = case direction
-                 when NORTH then [0, -1]
-                 when EAST then [1, 0]
-                 when SOUTH then [0, 1]
-                 when WEST then [-1, 0]
+                 when NORTH then [0, 1]
+                 when EAST then [-1, 0]
+                 when SOUTH then [0, -1]
+                 when WEST then [1, 0]
                  end
         next if @solution.key?([x + dx, y + dy])
 
@@ -109,14 +135,14 @@ class Day20 < Base
   SOUTH = 2
   WEST = 3
 
-  # each tile stored as 10 line strings, with
+  # each tile stored as 10x10 2d array, with
   # - original tile number
   # - methods to access the edges (as a string), with or without flipping or
-  #   rotating
+  #   transposing
   class Tile
     def initialize(input)
       @number = input.lines[0].match(/^Tile (\d+):/)[1].to_i
-      @grid = input.lines[1..].map(&:chomp)
+      @grid = input.lines[1..].map(&:chomp).map { |row| row.split("") }
 
       @edges = {}
     end
@@ -125,9 +151,9 @@ class Day20 < Base
 
     def real_edge(side)
       case side
-      when NORTH then grid[0]
+      when NORTH then grid[0].join
       when EAST then grid.map { |row| row[-1] }.join
-      when SOUTH then grid[-1]
+      when SOUTH then grid[-1].join
       when WEST then grid.map { |row| row[0] }.join
       else
         raise ArgumentError, "Invalid side #{side}"
@@ -205,6 +231,60 @@ class Day20 < Base
           edge_str(side, hflip, vflip, transpose).tr("#.", "10").to_i(2)
         end
     end
+  end
+
+  def image
+    @image ||= to_image
+  end
+
+  # takes the solution and places it in a 2d array of "#" and "."
+  # the edges of the original tiles are not part of the image, so each tile
+  # really makes up an 8x8 grid.
+  def to_image
+    solve
+    offsetx = @solution.keys.map(&:first).min
+    offsety = @solution.keys.map(&:last).min
+    img = []
+    @solution.each do |(tilex, tiley), soln|
+      top = (tiley - offsety) * 8
+      left = (tilex - offsetx) * 8
+      grid = soln[:tile].grid[1..-2].map { |row| row[1..-2] } # chops edges
+      grid = grid.reverse if soln[:hflip]
+      grid = grid.map(&:reverse) if soln[:vflip]
+      grid = grid.transpose if soln[:transpose]
+      grid.each.with_index do |row, rownum|
+        row.each.with_index do |cell, colnum|
+          img[top + rownum] ||= []
+          img[top + rownum][left + colnum] = cell
+        end
+      end
+    end
+    img
+  end
+
+  MONSTER = [
+    "                  # ",
+    "#    ##    ##    ###",
+    " #  #  #  #  #  #   "
+  ].freeze
+
+  MONSTER_POINTS = MONSTER.each_with_index.map do |row, y|
+    row.split("").each_with_index.select { |c, _x| c == "#" }.map { |_c, x| [x, y] }
+  end.flatten.each_slice(2).to_a.freeze
+
+  # returns the number of monsters found AND replaces "#" with "O" where they
+  # were found in the image
+  def detect_sea_monsters!(img)
+    count = 0
+    0.upto(img.size - MONSTER.size).each do |y|
+      0.upto(img.first.size - MONSTER.first.size).each do |x|
+        next unless MONSTER_POINTS.all? { |mx, my| img[y + my][x + mx] == "#" }
+
+        MONSTER_POINTS.each { |mx, my| img[y + my][x + mx] = "O" }
+        count += 1
+      end
+    end
+    count
   end
 
   def tiles
