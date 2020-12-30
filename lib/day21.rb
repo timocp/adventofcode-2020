@@ -13,6 +13,14 @@ class Day21 < Base
     safe_food.map { |ingredient| @ingredients[ingredient] }.sum
   end
 
+  def part2
+    parse
+    reduce_allergens
+
+    # dangerous ingredient list
+    @allergens.sort_by { |allergen, _ingredient| allergen }.map(&:last).join(",")
+  end
+
   def reduce_allergens
     # iterate over @allergens looking for allergens which map exactly to an
     # ingredient.

@@ -11,4 +11,8 @@ class Day21Test < Minitest::Test
   def test_part1
     assert_equal 5, Day21.new(TEST_INPUT).part1
   end
+
+  def test_part2
+    assert_equal "mxmxvkd,sqjhc,fvjkl", Day21.new(TEST_INPUT).part2
+  end
 end
