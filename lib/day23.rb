@@ -1,28 +1,44 @@
 class Day23 < Base
   def part1
-    play(100)
-  end
-
-  def play(count)
-    circle = parse
-
-    # circle is an array; keep the "current" cup at index 0 (this simplifies
-    # pickups and moves)
-    count.times do |move|
-      pickup = circle.slice(1, 3)
-      destination = (circle[0] - 1).downto(1).detect { |d| !pickup.include?(d) }
-      destination ||= 9.downto(circle[0] + 1).detect { |d| !pickup.include?(d) }
-      dpos = circle.index(destination)
-      circle = circle[4..dpos] + pickup + circle[(dpos + 1)..9] + [circle[0]]
-    end
+    circle = play2(100, parse)
 
     # clockwise starting after and not including the 1
-    one = circle.index(1)
-    if one.zero?
-      circle[(one + 1)..].join
-    else
-      (circle[(one + 1)..] + circle[..(one - 1)]).join
+    cup = 1
+    out = []
+    out << cup while (cup = circle[cup]) != 1
+    out.join
+  end
+
+  def part2
+    circle = parse
+    circle += ((circle.max + 1)..1000000).to_a
+    circle = play2(10000000, circle)
+    circle[1] * circle[circle[1]]
+  end
+
+  # hash version to reduce reallocations
+  def play2(count, circle)
+    # build a hash keyed by cup, value is the cup that follows it
+    max = circle.max
+    current = circle.first
+    circle = circle.map.with_index { |cup, i| [cup, circle[i + 1] || circle[0]] }.to_h
+
+    count.times do |move|
+      pickup = [circle[current]]
+      pickup << circle[pickup.last]
+      pickup << circle[pickup.last]
+      circle[current] = circle[pickup.last]
+      destination = (current - 1).downto(1).detect { |d| !pickup.include?(d) }
+      destination ||= max.downto(current + 1).detect { |d| !pickup.include?(d) }
+      follows = circle[destination]
+      circle[destination] = pickup[0]
+      circle[pickup[0]] = pickup[1]
+      circle[pickup[1]] = pickup[2]
+      circle[pickup[2]] = follows
+      current = circle[current]
     end
+
+    circle
   end
 
   def parse
